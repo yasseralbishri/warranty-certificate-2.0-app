@@ -9,7 +9,7 @@ import { ConnectionMonitor } from '@/components/ConnectionMonitor'
 import { APP_CONFIG, ROUTES } from '@/lib/constants'
 
 // 🔍 اختبار متغيرات البيئة - يمكن حذفها بعد التأكد
-import '@/lib/env-test'
+import '@/lib/vercel-debug'
 
 // Lazy load components for better performance
 const Dashboard = lazy(() => import('@/components/Dashboard'))

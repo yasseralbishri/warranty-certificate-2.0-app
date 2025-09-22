@@ -1,4 +1,4 @@
-import { supabase } from './supabase-client'
+import { supabase } from './supabase-fixed'
 
 // Re-export supabase client for backward compatibility
 export { supabase }
