@@ -438,8 +438,6 @@ export const userService = {
     return data
   }
 }
-<<<<<<< Current (Your changes)
-=======
 
 // Sample products data
 const SAMPLE_PRODUCTS = [
@@ -581,4 +579,3 @@ export type Database = {
 }
 
 console.log('✅ [Supabase] Client initialized successfully')
->>>>>>> Incoming (Background Agent changes)
