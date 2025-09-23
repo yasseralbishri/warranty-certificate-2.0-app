@@ -1,35 +1,89 @@
-import { supabase } from './supabase-fixed'
+import { createClient } from '@supabase/supabase-js'
 
-// Re-export supabase client for backward compatibility
-export { supabase }
+// Get environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+// Debug logs for development
+if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+  console.log('🔧 [Supabase] Initializing Supabase client...')
+  console.log('🔧 [Supabase] URL:', supabaseUrl ? '✅ Set' : '❌ Missing')
+  console.log('🔧 [Supabase] Key:', supabaseAnonKey ? '✅ Set' : '❌ Missing')
+}
+
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  const missingVars = []
+  if (!supabaseUrl) missingVars.push('VITE_SUPABASE_URL')
+  if (!supabaseAnonKey) missingVars.push('VITE_SUPABASE_ANON_KEY')
+  
+  const errorMessage = `Missing required environment variables: ${missingVars.join(', ')}. Please check your .env file or Vercel settings.`
+  console.error('❌ [Supabase]', errorMessage)
+  throw new Error(errorMessage)
+}
+
+// Validate URL format
+if (!supabaseUrl.startsWith('https://') || !supabaseUrl.includes('.supabase.co')) {
+  const errorMessage = 'Invalid Supabase URL format. Must start with https:// and end with .supabase.co'
+  console.error('❌ [Supabase]', errorMessage)
+  throw new Error(errorMessage)
+}
+
+// Validate key format
+if (!supabaseAnonKey.startsWith('eyJ') && !supabaseAnonKey.startsWith('sb_')) {
+  const errorMessage = 'Invalid Supabase key format. Must start with eyJ or sb_'
+  console.error('❌ [Supabase]', errorMessage)
+  throw new Error(errorMessage)
+}
+
+// Create Supabase client
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Enable automatic session refresh
+    autoRefreshToken: true,
+    // Persist session in localStorage
+    persistSession: true,
+    // Detect session in URL (for OAuth flows)
+    detectSessionInUrl: true,
+    // Storage key for session
+    storageKey: 'sb-warranty-session',
+    // Storage implementation
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    // Flow type for authentication
+    flowType: 'pkce'
+  },
+  // Global configuration
+  global: {
+    headers: {
+      'X-Client-Info': 'warranty-app'
+    }
+  }
+})
 
 // Helper functions for database operations
 export const warrantyService = {
 
   // Get all products
   async getProducts() {
-    console.log('🔄 [getProducts] بدء جلب المنتجات من Supabase...')
+    console.log('🔄 [getProducts] Fetching products from Supabase...')
     
     const { data, error } = await supabase
       .from('products')
       .select('*')
       .order('name')
     
-    console.log('📊 [getProducts] البيانات المستلمة:', data)
-    console.log('❌ [getProducts] الأخطاء:', error)
-    
     if (error) {
-      console.error('💥 [getProducts] خطأ في جلب المنتجات:', error)
+      console.error('💥 [getProducts] Error fetching products:', error)
       throw error
     }
     
-    console.log('✅ [getProducts] تم جلب المنتجات بنجاح، العدد:', data?.length || 0)
+    console.log('✅ [getProducts] Products fetched successfully, count:', data?.length || 0)
     return data
   },
 
   // Get all warranties with related data
   async getWarranties() {
-    console.log('🔄 [getWarranties] بدء جلب شهادات الضمان من Supabase...')
+    console.log('🔄 [getWarranties] Fetching warranties from Supabase...')
     
     const { data, error } = await supabase
       .from('warranties')
@@ -42,21 +96,18 @@ export const warrantyService = {
       `)
       .order('created_at', { ascending: false })
     
-    console.log('📊 [getWarranties] البيانات المستلمة:', data)
-    console.log('❌ [getWarranties] الأخطاء:', error)
-    
     if (error) {
-      console.error('💥 [getWarranties] خطأ في جلب شهادات الضمان:', error)
+      console.error('💥 [getWarranties] Error fetching warranties:', error)
       throw error
     }
     
-    console.log('✅ [getWarranties] تم جلب شهادات الضمان بنجاح، العدد:', data?.length || 0)
+    console.log('✅ [getWarranties] Warranties fetched successfully, count:', data?.length || 0)
     return data
   },
 
   // Create a new customer
   async createCustomer(customer: Database['public']['Tables']['customers']['Insert']) {
-    console.log('🔄 [createCustomer] بدء إنشاء عميل جديد في Supabase...', customer)
+    console.log('🔄 [createCustomer] Creating new customer in Supabase...', customer)
     
     const { data, error } = await supabase
       .from('customers')
@@ -64,26 +115,23 @@ export const warrantyService = {
       .select()
       .single()
     
-    console.log('📊 [createCustomer] البيانات المستلمة:', data)
-    console.log('❌ [createCustomer] الأخطاء:', error)
-    
     if (error) {
-      console.error('💥 [createCustomer] خطأ في إنشاء العميل:', error)
+      console.error('💥 [createCustomer] Error creating customer:', error)
       throw error
     }
     
-    console.log('✅ [createCustomer] تم إنشاء العميل بنجاح:', data)
+    console.log('✅ [createCustomer] Customer created successfully:', data)
     return data
   },
 
   // Create warranties for a customer
   async createWarranties(warranties: Database['public']['Tables']['warranties']['Insert'][], userId?: string) {
-    console.log('🔄 [createWarranties] بدء إنشاء شهادات ضمان في Supabase...', warranties)
+    console.log('🔄 [createWarranties] Creating warranties in Supabase...', warranties)
     
     // Add created_by field if userId is provided
     const warrantiesWithUser = warranties.map(warranty => ({
       ...warranty,
-      created_by: userId || null
+      created_by: userId || undefined
     }))
 
     const { data, error } = await supabase
@@ -91,21 +139,18 @@ export const warrantyService = {
       .insert(warrantiesWithUser)
       .select()
     
-    console.log('📊 [createWarranties] البيانات المستلمة:', data)
-    console.log('❌ [createWarranties] الأخطاء:', error)
-    
     if (error) {
-      console.error('💥 [createWarranties] خطأ في إنشاء شهادات الضمان:', error)
+      console.error('💥 [createWarranties] Error creating warranties:', error)
       throw error
     }
     
-    console.log('✅ [createWarranties] تم إنشاء شهادات الضمان بنجاح، العدد:', data?.length || 0)
+    console.log('✅ [createWarranties] Warranties created successfully, count:', data?.length || 0)
     return data
   },
 
   // Search warranties by invoice number or phone
   async searchWarranties(params: { invoiceNumber?: string; phoneNumber?: string }) {
-    console.log('🔄 [searchWarranties] بدء البحث عن شهادات الضمان في Supabase...', params)
+    console.log('🔄 [searchWarranties] Searching warranties in Supabase...', params)
     
     let query = supabase
       .from('warranties')
@@ -127,41 +172,36 @@ export const warrantyService = {
 
     const { data, error } = await query.order('created_at', { ascending: false })
     
-    console.log('📊 [searchWarranties] البيانات المستلمة:', data)
-    console.log('❌ [searchWarranties] الأخطاء:', error)
-    
     if (error) {
-      console.error('💥 [searchWarranties] خطأ في البحث عن شهادات الضمان:', error)
+      console.error('💥 [searchWarranties] Error searching warranties:', error)
       throw error
     }
     
-    console.log('✅ [searchWarranties] تم البحث بنجاح، العدد:', data?.length || 0)
+    console.log('✅ [searchWarranties] Search completed successfully, count:', data?.length || 0)
     return data
   },
 
   // Delete warranty
   async deleteWarranty(warrantyId: string) {
-    console.log('🔄 [deleteWarranty] بدء حذف شهادة الضمان من Supabase...', warrantyId)
+    console.log('🔄 [deleteWarranty] Deleting warranty from Supabase...', warrantyId)
     
     const { error } = await supabase
       .from('warranties')
       .delete()
       .eq('id', warrantyId)
     
-    console.log('❌ [deleteWarranty] الأخطاء:', error)
-    
     if (error) {
-      console.error('💥 [deleteWarranty] خطأ في حذف شهادة الضمان:', error)
+      console.error('💥 [deleteWarranty] Error deleting warranty:', error)
       throw error
     }
     
-    console.log('✅ [deleteWarranty] تم حذف شهادة الضمان بنجاح')
+    console.log('✅ [deleteWarranty] Warranty deleted successfully')
     return true
   },
 
   // Delete customer and all their warranties
   async deleteCustomer(customerId: string) {
-    console.log('🔄 [deleteCustomer] بدء حذف العميل وجميع شهادات الضمان من Supabase...', customerId)
+    console.log('🔄 [deleteCustomer] Deleting customer and all warranties from Supabase...', customerId)
     
     // First delete all warranties for this customer
     const { error: warrantiesError } = await supabase
@@ -169,10 +209,8 @@ export const warrantyService = {
       .delete()
       .eq('customer_id', customerId)
     
-    console.log('❌ [deleteCustomer] أخطاء حذف شهادات الضمان:', warrantiesError)
-    
     if (warrantiesError) {
-      console.error('💥 [deleteCustomer] خطأ في حذف شهادات الضمان:', warrantiesError)
+      console.error('💥 [deleteCustomer] Error deleting warranties:', warrantiesError)
       throw warrantiesError
     }
 
@@ -182,20 +220,18 @@ export const warrantyService = {
       .delete()
       .eq('id', customerId)
     
-    console.log('❌ [deleteCustomer] أخطاء حذف العميل:', customerError)
-    
     if (customerError) {
-      console.error('💥 [deleteCustomer] خطأ في حذف العميل:', customerError)
+      console.error('💥 [deleteCustomer] Error deleting customer:', customerError)
       throw customerError
     }
     
-    console.log('✅ [deleteCustomer] تم حذف العميل وجميع شهادات الضمان بنجاح')
+    console.log('✅ [deleteCustomer] Customer and all warranties deleted successfully')
     return true
   },
 
   // Update customer information
   async updateCustomer(customerId: string, updates: Database['public']['Tables']['customers']['Update']) {
-    console.log('🔄 [updateCustomer] بدء تحديث بيانات العميل في Supabase...', { customerId, updates })
+    console.log('🔄 [updateCustomer] Updating customer in Supabase...', { customerId, updates })
     
     const { data, error } = await supabase
       .from('customers')
@@ -204,25 +240,22 @@ export const warrantyService = {
       .select()
       .single()
     
-    console.log('📊 [updateCustomer] البيانات المستلمة:', data)
-    console.log('❌ [updateCustomer] الأخطاء:', error)
-    
     if (error) {
-      console.error('💥 [updateCustomer] خطأ في تحديث بيانات العميل:', error)
+      console.error('💥 [updateCustomer] Error updating customer:', error)
       throw error
     }
     
-    console.log('✅ [updateCustomer] تم تحديث بيانات العميل بنجاح:', data)
+    console.log('✅ [updateCustomer] Customer updated successfully:', data)
     return data
   },
 
   // Update warranty
   async updateWarranty(warrantyId: string, updates: Database['public']['Tables']['warranties']['Update'], userId?: string) {
-    console.log('🔄 [updateWarranty] بدء تحديث شهادة الضمان في Supabase...', { warrantyId, updates, userId })
+    console.log('🔄 [updateWarranty] Updating warranty in Supabase...', { warrantyId, updates, userId })
     
     const updatesWithUser: Database['public']['Tables']['warranties']['Update'] = {
       ...updates,
-      updated_by: userId || null
+      updated_by: userId || undefined
     }
 
     const { data, error } = await supabase
@@ -232,21 +265,18 @@ export const warrantyService = {
       .select()
       .single()
     
-    console.log('📊 [updateWarranty] البيانات المستلمة:', data)
-    console.log('❌ [updateWarranty] الأخطاء:', error)
-    
     if (error) {
-      console.error('💥 [updateWarranty] خطأ في تحديث شهادة الضمان:', error)
+      console.error('💥 [updateWarranty] Error updating warranty:', error)
       throw error
     }
     
-    console.log('✅ [updateWarranty] تم تحديث شهادة الضمان بنجاح:', data)
+    console.log('✅ [updateWarranty] Warranty updated successfully:', data)
     return data
   },
 
   // Initialize sample data
   async initializeSampleData() {
-    console.log('🔄 [initializeSampleData] بدء تهيئة البيانات التجريبية في Supabase...')
+    console.log('🔄 [initializeSampleData] Initializing sample data in Supabase...')
     
     // Check if products already exist
     const { data: existingProducts } = await supabase
@@ -254,10 +284,8 @@ export const warrantyService = {
       .select('id')
       .limit(1)
 
-    console.log('📊 [initializeSampleData] المنتجات الموجودة:', existingProducts)
-
     if (existingProducts && existingProducts.length > 0) {
-      console.log('✅ [initializeSampleData] البيانات موجودة بالفعل، لا حاجة للتهيئة')
+      console.log('✅ [initializeSampleData] Data already exists, no need to initialize')
       return // Data already exists
     }
 
@@ -265,12 +293,10 @@ export const warrantyService = {
       .from('products')
       .insert(SAMPLE_PRODUCTS)
 
-    console.log('❌ [initializeSampleData] أخطاء إدراج المنتجات التجريبية:', productsError)
-
     if (productsError) {
-      console.error('💥 [initializeSampleData] خطأ في إدراج المنتجات التجريبية:', productsError)
+      console.error('💥 [initializeSampleData] Error inserting sample products:', productsError)
     } else {
-      console.log('✅ [initializeSampleData] تم إدراج المنتجات التجريبية بنجاح')
+      console.log('✅ [initializeSampleData] Sample products inserted successfully')
     }
   }
 }
@@ -279,22 +305,19 @@ export const warrantyService = {
 export const userService = {
   // Get all users
   async getAllUsers() {
-    console.log('🔄 [getAllUsers] بدء جلب جميع المستخدمين من Supabase...')
+    console.log('🔄 [getAllUsers] Fetching all users from Supabase...')
     
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
       .order('created_at', { ascending: false })
     
-    console.log('📊 [getAllUsers] البيانات المستلمة:', data)
-    console.log('❌ [getAllUsers] الأخطاء:', error)
-    
     if (error) {
-      console.error('💥 [getAllUsers] خطأ في جلب المستخدمين:', error)
+      console.error('💥 [getAllUsers] Error fetching users:', error)
       throw error
     }
     
-    console.log('✅ [getAllUsers] تم جلب المستخدمين بنجاح، العدد:', data?.length || 0)
+    console.log('✅ [getAllUsers] Users fetched successfully, count:', data?.length || 0)
     return data
   },
 
@@ -314,11 +337,11 @@ export const userService = {
 
     if (authError) {
       console.error('Auth signup error:', authError)
-      throw new Error(`خطأ في إنشاء المستخدم: ${authError.message}`)
+      throw new Error(`User creation error: ${authError.message}`)
     }
     
     if (!authData.user) {
-      throw new Error('فشل في إنشاء المستخدم - لم يتم إرجاع بيانات المستخدم')
+      throw new Error('Failed to create user - no user data returned')
     }
 
     // Wait a moment for the user to be created
@@ -415,3 +438,147 @@ export const userService = {
     return data
   }
 }
+<<<<<<< Current (Your changes)
+=======
+
+// Sample products data
+const SAMPLE_PRODUCTS = [
+  { name: 'مكيف هواء', description: 'مكيف هواء منزلي', warranty_period_months: 24 },
+  { name: 'غسالة', description: 'غسالة ملابس', warranty_period_months: 36 },
+  { name: 'ثلاجة', description: 'ثلاجة منزلية', warranty_period_months: 24 },
+  { name: 'فرن', description: 'فرن كهربائي', warranty_period_months: 12 },
+  { name: 'ميكروويف', description: 'فرن ميكروويف', warranty_period_months: 12 }
+]
+
+// Database types (you may need to generate these from your Supabase schema)
+export type Database = {
+  public: {
+    Tables: {
+      customers: {
+        Row: {
+          id: string
+          name: string
+          phone: string
+          email?: string
+          address?: string
+          invoice_number: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          phone: string
+          email?: string
+          address?: string
+          invoice_number: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          phone?: string
+          email?: string
+          address?: string
+          invoice_number?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      products: {
+        Row: {
+          id: string
+          name: string
+          description?: string
+          warranty_period_months: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string
+          warranty_period_months: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string
+          warranty_period_months?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      warranties: {
+        Row: {
+          id: string
+          customer_id: string
+          product_id: string
+          warranty_start_date: string
+          warranty_end_date: string
+          created_by?: string
+          updated_by?: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          customer_id: string
+          product_id: string
+          warranty_start_date: string
+          warranty_end_date: string
+          created_by?: string
+          updated_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          customer_id?: string
+          product_id?: string
+          warranty_start_date?: string
+          warranty_end_date?: string
+          created_by?: string
+          updated_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      user_profiles: {
+        Row: {
+          id: string
+          email: string
+          full_name: string
+          role: 'admin' | 'user'
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          email: string
+          full_name: string
+          role?: 'admin' | 'user'
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          full_name?: string
+          role?: 'admin' | 'user'
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+    }
+  }
+}
+
+console.log('✅ [Supabase] Client initialized successfully')
+>>>>>>> Incoming (Background Agent changes)
