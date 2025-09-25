@@ -75,17 +75,6 @@
         {
           "key": "Referrer-Policy",
           "value": "strict-origin-when-cross-origin"
-<<<<<<< Current (Your changes)
-        }
-      ]
-    }
-  ],
-  "functions": {
-    "app/api/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  }
-=======
         },
         {
           "key": "Permissions-Policy",
@@ -97,6 +86,10 @@
         }
       ]
     }
-  ]
->>>>>>> Incoming (Background Agent changes)
+  ],
+  "functions": {
+    "app/api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  }
 }

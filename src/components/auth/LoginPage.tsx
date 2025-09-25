@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
+import { useSecureAuth } from '@/contexts/SecureAuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +19,7 @@ import {
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const { signIn, isAuthenticated, loading: authLoading } = useSecureAuth()
   
   // حالة النموذج
   const [email, setEmail] = useState('')
@@ -31,6 +32,13 @@ export function LoginPage() {
     email?: string
     password?: string
   }>({})
+
+  // التحقق من حالة المصادقة الحالية
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      navigate('/', { replace: true })
+    }
+  }, [isAuthenticated, authLoading, navigate])
 
   // التحقق من صحة البيانات
   const validateForm = () => {
@@ -65,33 +73,17 @@ export function LoginPage() {
     setSuccess('')
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim(),
-      })
+      const result = await signIn(email.trim(), password.trim())
 
-      if (error) {
-        let errorMessage = 'حدث خطأ في تسجيل الدخول'
-        
-        if (error.message.includes('Invalid login credentials')) {
-          errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
-        } else if (error.message.includes('Email not confirmed')) {
-          errorMessage = 'يرجى تأكيد البريد الإلكتروني أولاً'
-        } else if (error.message.includes('Too many requests')) {
-          errorMessage = 'تم تجاوز عدد المحاولات المسموح. يرجى المحاولة لاحقاً'
-        }
-        
-        setError(errorMessage)
-        return
-      }
-
-      if (data?.user && data?.session) {
+      if (result.success) {
         setSuccess('تم تسجيل الدخول بنجاح! جاري التوجيه...')
         
         // التوجيه إلى الصفحة الرئيسية
         setTimeout(() => {
           navigate('/', { replace: true })
         }, 1500)
+      } else {
+        setError(result.error || 'حدث خطأ في تسجيل الدخول')
       }
     } catch (error: any) {
       console.error('خطأ في تسجيل الدخول:', error)
