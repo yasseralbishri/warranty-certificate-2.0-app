@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { formatDate, formatPhoneNumber } from '@/lib/utils'
 
 interface WarrantyCardProps {
@@ -65,28 +66,27 @@ export const WarrantyCard = memo(function WarrantyCard({
           </CardTitle>
           
           {/* Status Badge */}
-          <div className={`flex items-center px-4 py-2 rounded-xl text-sm font-medium ${
-            isExpired ? 'bg-red-600 text-white' : 
-            isExpiringSoon ? 'bg-yellow-600 text-white' : 
-            'bg-green-600 text-white'
-          }`}>
+          <Badge 
+            variant={isExpired ? 'destructive' : isExpiringSoon ? 'warning' : 'success'}
+            className="flex items-center gap-1 px-4 py-2 text-sm font-medium"
+          >
             {isExpired ? (
               <>
-                <AlertTriangle className="h-4 w-4 mr-1" />
+                <AlertTriangle className="h-4 w-4" />
                 منتهي الصلاحية
               </>
             ) : isExpiringSoon ? (
               <>
-                <Clock className="h-4 w-4 mr-1" />
+                <Clock className="h-4 w-4" />
                 ينتهي قريباً
               </>
             ) : (
               <>
-                <CheckCircle className="h-4 w-4 mr-1" />
+                <CheckCircle className="h-4 w-4" />
                 الضمان ساري
               </>
             )}
-          </div>
+          </Badge>
         </div>
       </CardHeader>
       

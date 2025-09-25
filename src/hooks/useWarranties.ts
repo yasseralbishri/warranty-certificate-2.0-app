@@ -16,7 +16,12 @@ export function useWarranties() {
   
   const query = useQuery({
     queryKey: warrantyKeys.lists(),
-    queryFn: warrantyService.getWarranties,
+    queryFn: async () => {
+      console.log('🔄 [useWarranties] استدعاء warrantyService.getWarranties...')
+      const result = await warrantyService.getWarranties()
+      console.log('📊 [useWarranties] نتيجة getWarranties:', result)
+      return result
+    },
     staleTime: 2 * 60 * 1000, // 2 minutes
   })
   
@@ -61,7 +66,12 @@ export function useProducts() {
   
   const query = useQuery({
     queryKey: ['products'],
-    queryFn: warrantyService.getProducts,
+    queryFn: async () => {
+      console.log('🔄 [useProducts] استدعاء warrantyService.getProducts...')
+      const result = await warrantyService.getProducts()
+      console.log('📊 [useProducts] نتيجة getProducts:', result)
+      return result
+    },
     staleTime: 10 * 60 * 1000, // 10 minutes - products don't change often
   })
   
@@ -83,18 +93,29 @@ export function useCreateWarranty() {
 
   return useMutation({
     mutationFn: async (formData: WarrantyFormData) => {
+      console.log('🔄 [useCreateWarranty] بدء إنشاء ضمان...', formData)
+      
       // Create customer first
+      console.log('🔄 [useCreateWarranty] إنشاء العميل...')
       const customer = await warrantyService.createCustomer({
         name: formData.customerName,
         phone: formData.phoneNumber,
         invoice_number: formData.invoiceNumber,
       })
+      console.log('✅ [useCreateWarranty] تم إنشاء العميل:', customer)
 
       // Calculate warranty dates
       const startDate = new Date().toISOString()
       const endDate = calculateWarrantyEndDate(new Date(), formData.warrantyPeriod).toISOString()
 
-      // Create warranties for selected products
+      // Create warranties for selected products (if any)
+      if (formData.selectedProducts.length === 0) {
+        console.log('ℹ️ [useCreateWarranty] لا توجد شركات مختارة، إرجاع رسالة نجاح')
+        // إذا لم يتم اختيار أي شركة، نرجع رسالة نجاح فقط
+        return { message: 'تم حفظ بيانات العميل بنجاح (بدون ضمانات)' }
+      }
+
+      console.log('🔄 [useCreateWarranty] إنشاء الضمانات للشركات المختارة...', formData.selectedProducts)
       const warranties = formData.selectedProducts.map((productId: string, index: number) => ({
         customer_id: (customer as any).id,
         product_id: productId,
@@ -106,7 +127,9 @@ export function useCreateWarranty() {
         notes: null,
       }))
 
-      return warrantyService.createWarranties(warranties, formData.userId)
+      const result = await warrantyService.createWarranties(warranties, formData.userId)
+      console.log('✅ [useCreateWarranty] تم إنشاء الضمانات:', result)
+      return result
     },
     onSuccess: () => {
       // Invalidate and refetch warranties

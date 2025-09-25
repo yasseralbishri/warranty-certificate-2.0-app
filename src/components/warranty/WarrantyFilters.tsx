@@ -1,9 +1,16 @@
 import React, { memo } from 'react'
 import { 
-  Filter, Shield, CalendarDays, Package, RotateCcw, ChevronDown, Search 
+  Filter, Shield, CalendarDays, Package, RotateCcw, Search 
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface WarrantyFiltersProps {
   statusFilter: 'all' | 'active' | 'expired' | 'expiring_soon'
@@ -51,19 +58,17 @@ export const WarrantyFilters = memo(function WarrantyFilters({
               </div>
               <label className="text-sm font-semibold text-gray-800">حالة الضمان</label>
             </div>
-            <div className="relative">
-              <select
-                value={statusFilter}
-                onChange={(e) => onStatusFilterChange(e.target.value as any)}
-                className="w-full px-4 py-3 pr-10 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium transition-all duration-200 hover:border-gray-300 appearance-none cursor-pointer"
-              >
-                <option value="all">جميع الحالات</option>
-                <option value="active">🟢 نشط</option>
-                <option value="expired">🔴 منتهي</option>
-                <option value="expiring_soon">🟡 ينتهي قريباً</option>
-              </select>
-              <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            </div>
+            <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+              <SelectTrigger className="w-full h-12 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium transition-all duration-200 hover:border-gray-300">
+                <SelectValue placeholder="اختر حالة الضمان" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع الحالات</SelectItem>
+                <SelectItem value="active">🟢 نشط</SelectItem>
+                <SelectItem value="expired">🔴 منتهي</SelectItem>
+                <SelectItem value="expiring_soon">🟡 ينتهي قريباً</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Date Filter */}
@@ -74,20 +79,18 @@ export const WarrantyFilters = memo(function WarrantyFilters({
               </div>
               <label className="text-sm font-semibold text-gray-800">تاريخ الإنشاء</label>
             </div>
-            <div className="relative">
-              <select
-                value={dateFilter}
-                onChange={(e) => onDateFilterChange(e.target.value as any)}
-                className="w-full px-4 py-3 pr-10 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium transition-all duration-200 hover:border-gray-300 appearance-none cursor-pointer"
-              >
-                <option value="all">جميع التواريخ</option>
-                <option value="today">📅 اليوم</option>
-                <option value="week">📆 آخر أسبوع</option>
-                <option value="month">🗓️ آخر شهر</option>
-                <option value="year">📊 آخر سنة</option>
-              </select>
-              <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            </div>
+            <Select value={dateFilter} onValueChange={onDateFilterChange}>
+              <SelectTrigger className="w-full h-12 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium transition-all duration-200 hover:border-gray-300">
+                <SelectValue placeholder="اختر الفترة الزمنية" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع التواريخ</SelectItem>
+                <SelectItem value="today">📅 اليوم</SelectItem>
+                <SelectItem value="week">📆 آخر أسبوع</SelectItem>
+                <SelectItem value="month">🗓️ آخر شهر</SelectItem>
+                <SelectItem value="year">📊 آخر سنة</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Product Filter */}
@@ -98,21 +101,19 @@ export const WarrantyFilters = memo(function WarrantyFilters({
               </div>
               <label className="text-sm font-semibold text-gray-800">نوع المنتج</label>
             </div>
-            <div className="relative">
-              <select
-                value={productFilter}
-                onChange={(e) => onProductFilterChange(e.target.value)}
-                className="w-full px-4 py-3 pr-10 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium transition-all duration-200 hover:border-gray-300 appearance-none cursor-pointer"
-              >
-                <option value="all">جميع المنتجات</option>
+            <Select value={productFilter} onValueChange={onProductFilterChange}>
+              <SelectTrigger className="w-full h-12 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 text-sm font-medium transition-all duration-200 hover:border-gray-300">
+                <SelectValue placeholder="اختر المنتج" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">جميع المنتجات</SelectItem>
                 {uniqueProducts.map((product) => (
-                  <option key={product} value={product}>
+                  <SelectItem key={product} value={product}>
                     📦 {product}
-                  </option>
+                  </SelectItem>
                 ))}
-              </select>
-              <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            </div>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Clear Filters Button */}

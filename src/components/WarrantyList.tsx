@@ -186,7 +186,7 @@ export const WarrantyList = memo(function WarrantyList() {
     }
   }, [deleteCustomerMutation])
 
-  // Conditional rendering after all hooks
+  // Conditional rendering - moved to the end to avoid hooks order issues
   if (showCertificate && selectedWarranty) {
     return (
       <CertificateGenerator

@@ -171,6 +171,193 @@ export function logSecurityEvent(event: string, details: Record<string, any> = {
 }
 
 /**
+ * Enhanced input validation with comprehensive security checks
+ */
+export class SecurityValidator {
+  private static readonly DANGEROUS_PATTERNS = [
+    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+    /javascript:/gi,
+    /vbscript:/gi,
+    /data:/gi,
+    /on\w+\s*=/gi,
+    /eval\s*\(/gi,
+    /expression\s*\(/gi,
+    /url\s*\(/gi,
+    /@import/gi,
+    /document\./gi,
+    /window\./gi,
+    /alert\s*\(/gi,
+    /confirm\s*\(/gi,
+    /prompt\s*\(/gi,
+    /\.\.\//g, // Path traversal
+    /\.\.\\/g, // Path traversal (Windows)
+    /union\s+select/gi, // SQL injection
+    /drop\s+table/gi, // SQL injection
+    /delete\s+from/gi, // SQL injection
+    /insert\s+into/gi, // SQL injection
+    /update\s+set/gi, // SQL injection
+  ]
+
+  static validateInput(input: string, maxLength: number = 1000): {
+    isValid: boolean
+    sanitized: string
+    warnings: string[]
+  } {
+    const warnings: string[] = []
+    let sanitized = input
+
+    // Check length
+    if (input.length > maxLength) {
+      warnings.push(`Input exceeds maximum length of ${maxLength} characters`)
+      sanitized = input.substring(0, maxLength)
+    }
+
+    // Check for dangerous patterns
+    for (const pattern of this.DANGEROUS_PATTERNS) {
+      if (pattern.test(input)) {
+        warnings.push(`Potentially dangerous content detected: ${pattern.source}`)
+        sanitized = sanitized.replace(pattern, '')
+      }
+    }
+
+    // Additional sanitization
+    sanitized = sanitized
+      .trim()
+      .replace(/[<>'"&]/g, '')
+      .replace(/\s+/g, ' ')
+
+    return {
+      isValid: warnings.length === 0,
+      sanitized,
+      warnings
+    }
+  }
+
+  static validateFileUpload(file: File): {
+    isValid: boolean
+    error?: string
+  } {
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      return {
+        isValid: false,
+        error: `File too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB`
+      }
+    }
+
+    // Check file type
+    if (!ALLOWED_FILE_TYPES.includes(file.type as any)) {
+      return {
+        isValid: false,
+        error: `File type not allowed. Allowed types: ${ALLOWED_FILE_TYPES.join(', ')}`
+      }
+    }
+
+    // Check file name for dangerous patterns
+    const nameValidation = this.validateInput(file.name, 255)
+    if (!nameValidation.isValid) {
+      return {
+        isValid: false,
+        error: 'Invalid file name'
+      }
+    }
+
+    return { isValid: true }
+  }
+
+  static validateEmail(email: string): boolean {
+    if (!email || typeof email !== 'string') {
+      return false
+    }
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    const isValid = emailRegex.test(email) && email.length <= INPUT_LIMITS.EMAIL
+
+    if (!isValid) {
+      logSecurityEvent('Invalid email format attempted', { email })
+    }
+
+    return isValid
+  }
+
+  static validatePhoneNumber(phone: string): boolean {
+    if (!phone || typeof phone !== 'string') {
+      return false
+    }
+
+    const cleaned = phone.replace(/\D/g, '')
+    const saudiPatterns = [
+      /^05\d{8}$/, // 05xxxxxxxx
+      /^9665\d{8}$/, // 9665xxxxxxxx
+      /^\+9665\d{8}$/, // +9665xxxxxxxx
+    ]
+
+    const isValid = saudiPatterns.some(pattern => pattern.test(cleaned))
+
+    if (!isValid) {
+      logSecurityEvent('Invalid phone number format attempted', { phone })
+    }
+
+    return isValid
+  }
+}
+
+/**
+ * Content Security Policy helpers
+ */
+export const CSP_HEADERS = {
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.supabase.co",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; '),
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+}
+
+/**
+ * Rate limiting implementation
+ */
+export class RateLimiter {
+  private attempts = new Map<string, { count: number; resetTime: number }>()
+
+  isAllowed(key: string, limit: number, windowMs: number): boolean {
+    const now = Date.now()
+    const record = this.attempts.get(key)
+
+    if (!record || now > record.resetTime) {
+      this.attempts.set(key, { count: 1, resetTime: now + windowMs })
+      return true
+    }
+
+    if (record.count >= limit) {
+      logSecurityEvent('Rate limit exceeded', { key, limit, windowMs })
+      return false
+    }
+
+    record.count++
+    return true
+  }
+
+  reset(key: string): void {
+    this.attempts.delete(key)
+  }
+
+  clear(): void {
+    this.attempts.clear()
+  }
+}
+
+/**
  * Validate CSRF token (if implemented)
  */
 export function validateCSRFToken(token: string, expectedToken: string): boolean {

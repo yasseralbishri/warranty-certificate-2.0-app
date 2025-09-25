@@ -40,16 +40,16 @@ export const WARRANTY_DURATION_TYPES = {
 
 // Sample products data
 export const SAMPLE_PRODUCTS = [
-  { name: 'شركة أبل', description: 'شركة تقنية أمريكية متخصصة في الأجهزة الإلكترونية' },
-  { name: 'شركة سامسونج', description: 'شركة كورية جنوبية متخصصة في الإلكترونيات والهواتف' },
-  { name: 'شركة مايكروسوفت', description: 'شركة تقنية أمريكية متخصصة في البرمجيات والحوسبة' },
-  { name: 'شركة ديل', description: 'شركة أمريكية متخصصة في أجهزة الكمبيوتر والخوادم' },
-  { name: 'شركة إتش بي', description: 'شركة أمريكية متخصصة في أجهزة الكمبيوتر والطابعات' },
-  { name: 'شركة لينوفو', description: 'شركة صينية متخصصة في أجهزة الكمبيوتر والأجهزة المحمولة' },
-  { name: 'شركة آسوس', description: 'شركة تايوانية متخصصة في أجهزة الكمبيوتر والمكونات' },
-  { name: 'شركة سوني', description: 'شركة يابانية متخصصة في الإلكترونيات والترفيه' },
-  { name: 'شركة كانون', description: 'شركة يابانية متخصصة في الكاميرات والطابعات' },
-  { name: 'شركة إنتل', description: 'شركة أمريكية متخصصة في معالجات الكمبيوتر' }
+  { name: 'شركة أبل', description: 'شركة تقنية أمريكية متخصصة في الأجهزة الإلكترونية', warranty_period_months: 24 },
+  { name: 'شركة سامسونج', description: 'شركة كورية جنوبية متخصصة في الإلكترونيات والهواتف', warranty_period_months: 24 },
+  { name: 'شركة مايكروسوفت', description: 'شركة تقنية أمريكية متخصصة في البرمجيات والحوسبة', warranty_period_months: 36 },
+  { name: 'شركة ديل', description: 'شركة أمريكية متخصصة في أجهزة الكمبيوتر والخوادم', warranty_period_months: 36 },
+  { name: 'شركة إتش بي', description: 'شركة أمريكية متخصصة في أجهزة الكمبيوتر والطابعات', warranty_period_months: 24 },
+  { name: 'شركة لينوفو', description: 'شركة صينية متخصصة في أجهزة الكمبيوتر والأجهزة المحمولة', warranty_period_months: 24 },
+  { name: 'شركة آسوس', description: 'شركة تايوانية متخصصة في أجهزة الكمبيوتر والمكونات', warranty_period_months: 24 },
+  { name: 'شركة سوني', description: 'شركة يابانية متخصصة في الإلكترونيات والترفيه', warranty_period_months: 24 },
+  { name: 'شركة كانون', description: 'شركة يابانية متخصصة في الكاميرات والطابعات', warranty_period_months: 12 },
+  { name: 'شركة إنتل', description: 'شركة أمريكية متخصصة في معالجات الكمبيوتر', warranty_period_months: 36 }
 ] as const
 
 // UI Constants

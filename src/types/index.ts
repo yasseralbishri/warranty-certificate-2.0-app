@@ -36,22 +36,31 @@ export interface Database {
           id: string
           name: string
           phone: string
+          email?: string
+          address?: string
           invoice_number: string
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
           name: string
           phone: string
+          email?: string
+          address?: string
           invoice_number: string
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
           name?: string
           phone?: string
+          email?: string
+          address?: string
           invoice_number?: string
           created_at?: string
+          updated_at?: string
         }
       }
       products: {
@@ -59,19 +68,25 @@ export interface Database {
           id: string
           name: string
           description: string | null
+          warranty_period_months: number
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
           name: string
           description?: string | null
+          warranty_period_months: number
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
           name?: string
           description?: string | null
+          warranty_period_months?: number
           created_at?: string
+          updated_at?: string
         }
       }
       warranties: {
@@ -140,15 +155,20 @@ export interface Customer {
   id: string
   name: string
   phone: string
+  email?: string
+  address?: string
   invoice_number: string
   created_at: string
+  updated_at: string
 }
 
 export interface Product {
   id: string
   name: string
   description: string | null
+  warranty_period_months: number
   created_at: string
+  updated_at: string
 }
 
 export interface Warranty {

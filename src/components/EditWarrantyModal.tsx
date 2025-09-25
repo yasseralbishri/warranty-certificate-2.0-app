@@ -1,7 +1,12 @@
 import { useState, useEffect, memo } from 'react'
-import { X, Edit } from 'lucide-react'
+import { Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { useUpdateCustomer, useUpdateWarranty, useProducts } from '@/hooks/useWarranties'
 import { sanitizeInput, calculateWarrantyEndDate } from '@/lib/utils'
 import { warrantyService } from '@/lib/supabase'
@@ -189,67 +194,51 @@ export const EditWarrantyModal = memo(function EditWarrantyModal({ isOpen, onClo
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in">
-      <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-bounce-in">
-        <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-gray-50 rounded-2xl overflow-hidden">
-          <CardHeader className="bg-white border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl font-bold text-center text-gray-800 flex items-center animate-slide-in-right">
-                <div className="p-2 bg-blue-100 rounded-lg mr-3 animate-pulse-slow">
-                  <Edit className="h-6 w-6 text-blue-600" />
-                </div>
-                تعديل بيانات الشهادة
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="h-10 w-10 rounded-xl hover:bg-red-100 hover:text-red-600 transition-all duration-200"
-              >
-                <X className="h-5 w-5" />
-              </Button>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-center text-gray-800 flex items-center animate-slide-in-right">
+            <div className="p-2 bg-blue-100 rounded-lg mr-3 animate-pulse-slow">
+              <Edit className="h-6 w-6 text-blue-600" />
             </div>
-          </CardHeader>
+            تعديل بيانات الشهادة
+          </DialogTitle>
+        </DialogHeader>
         
-          <CardContent className="p-6">
-            <MessageDisplay 
-              successMessage={successMessage} 
-              errorMessage={errorMessage} 
-            />
+        <div className="space-y-8">
+          <MessageDisplay 
+            successMessage={successMessage} 
+            errorMessage={errorMessage} 
+          />
 
-            <div className="space-y-8">
-              <CustomerInfoSection
-                formData={{
-                  customerName: formData.customerName,
-                  phoneNumber: formData.phoneNumber,
-                  invoiceNumber: formData.invoiceNumber
-                }}
-                onInputChange={handleInputChange}
-              />
+          <CustomerInfoSection
+            formData={{
+              customerName: formData.customerName,
+              phoneNumber: formData.phoneNumber,
+              invoiceNumber: formData.invoiceNumber
+            }}
+            onInputChange={handleInputChange}
+          />
 
-              <WarrantyPeriodSection
-                warrantyPeriod={formData.warrantyPeriod}
-                onWarrantyPeriodChange={handleWarrantyPeriodChange}
-              />
+          <WarrantyPeriodSection
+            warrantyPeriod={formData.warrantyPeriod}
+            onWarrantyPeriodChange={handleWarrantyPeriodChange}
+          />
 
-              <ProductSelectionSection
-                products={products}
-                selectedProducts={formData.selectedProducts}
-                onProductToggle={handleProductToggle}
-              />
+          <ProductSelectionSection
+            products={products}
+            selectedProducts={formData.selectedProducts}
+            onProductToggle={handleProductToggle}
+          />
 
-              <ActionButtons
-                onClose={onClose}
-                onSave={handleSave}
-                isSaving={updateCustomerMutation.isPending || updateWarrantyMutation.isPending}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+          <ActionButtons
+            onClose={onClose}
+            onSave={handleSave}
+            isSaving={updateCustomerMutation.isPending || updateWarrantyMutation.isPending}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 })

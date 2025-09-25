@@ -1,5 +1,5 @@
 import React from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useSecureAuth } from '@/contexts/SecureAuthContext'
 import { AuthPage } from './AuthPage'
 
 interface ProtectedRouteProps {
@@ -8,35 +8,26 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { user, loading, isAuthenticated, isAdmin } = useAuth()
+  const { user, loading, isAuthenticated, isAdmin } = useSecureAuth()
 
-  // Add a timeout fallback for loading state
-  React.useEffect(() => {
-    if (loading) {
-      const timeout = setTimeout(() => {
-        // Loading timeout reached
-      }, 5000)
-      return () => clearTimeout(timeout)
-    }
-    return undefined
-  }, [loading])
-
+  // عرض شاشة التحميل
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg animate-pulse">جاري التحميل...</p>
-          <p className="text-gray-500 text-sm mt-2">يرجى الانتظار...</p>
+          <p className="text-gray-600 text-lg">جاري التحميل...</p>
         </div>
       </div>
     )
   }
 
-  if (!isAuthenticated) {
+  // إذا لم يكن المستخدم مسجل دخول
+  if (!isAuthenticated || !user) {
     return <AuthPage />
   }
 
+  // إذا كان المسار يتطلب صلاحيات مدير والمستخدم ليس مدير
   if (requireAdmin && !isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -57,5 +48,6 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
     )
   }
 
+  // عرض المحتوى المطلوب
   return <>{children}</>
 }

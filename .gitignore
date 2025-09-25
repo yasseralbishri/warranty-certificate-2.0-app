@@ -29,6 +29,12 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
+.env.test
+.env.production
+
+# Test files
+test-*.js
+test-*.html
 
 # Build outputs
 build/

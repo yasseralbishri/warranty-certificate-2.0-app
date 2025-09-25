@@ -1,40 +1,59 @@
 import React, { useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useSecureAuth } from '@/contexts/SecureAuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlSweedLogo } from '@/components/AlSweedLogo'
-import { Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle } from 'lucide-react'
 
 export function LoginForm() {
-  const { signIn } = useAuth()
+  const { signIn } = useSecureAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess('')
+
+    // التحقق من البيانات
+    if (!email.trim()) {
+      setError('يرجى إدخال البريد الإلكتروني')
+      setLoading(false)
+      return
+    }
+
+    if (!password.trim()) {
+      setError('يرجى إدخال كلمة المرور')
+      setLoading(false)
+      return
+    }
+
+    if (!email.includes('@')) {
+      setError('يرجى إدخال بريد إلكتروني صحيح')
+      setLoading(false)
+      return
+    }
 
     try {
-      const { error } = await signIn(email, password)
+      const result = await signIn(email.trim(), password.trim())
       
-      if (error) {
-        setError(error.message)
+      if (result.success) {
+        setSuccess('تم تسجيل الدخول بنجاح!')
+        // سيتم إعادة التوجيه تلقائياً من خلال AuthContext
+      } else {
+        setError(result.error || 'حدث خطأ في تسجيل الدخول')
       }
-      // If no error, the auth context will handle the redirect
     } catch (error: any) {
-      console.error('Login error:', error)
-      setError('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.')
+      setError('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى')
     } finally {
-      // Always stop loading after a short delay to ensure smooth UX
-      setTimeout(() => {
-        setLoading(false)
-      }, 500)
+      setLoading(false)
     }
   }
 
@@ -55,16 +74,44 @@ export function LoginForm() {
         
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* رسالة الخطأ */}
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                <AlertCircle className="w-5 h-5" />
-                <span className="text-sm">{error}</span>
+              <div className="flex items-center gap-2 p-4 bg-red-50 border-2 border-red-200 rounded-lg text-red-700">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <div className="flex-1">
+                  <span className="text-sm font-medium">{error}</span>
+                </div>
+                <button
+                  onClick={() => setError('')}
+                  className="text-red-500 hover:text-red-700 ml-2"
+                  type="button"
+                >
+                  ×
+                </button>
               </div>
             )}
 
+            {/* رسالة النجاح */}
+            {success && (
+              <div className="flex items-center gap-2 p-4 bg-green-50 border-2 border-green-200 rounded-lg text-green-700">
+                <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                <div className="flex-1">
+                  <span className="text-sm font-medium">{success}</span>
+                </div>
+                <button
+                  onClick={() => setSuccess('')}
+                  className="text-green-500 hover:text-green-700 ml-2"
+                  type="button"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* حقل البريد الإلكتروني */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                البريد الإلكتروني
+                البريد الإلكتروني *
               </Label>
               <Input
                 id="email"
@@ -75,12 +122,14 @@ export function LoginForm() {
                 required
                 className="h-12 text-base"
                 dir="ltr"
+                disabled={loading}
               />
             </div>
 
+            {/* حقل كلمة المرور */}
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                كلمة المرور
+                كلمة المرور *
               </Label>
               <div className="relative">
                 <Input
@@ -91,11 +140,13 @@ export function LoginForm() {
                   placeholder="كلمة المرور"
                   required
                   className="h-12 text-base pr-10"
+                  disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  disabled={loading}
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -106,6 +157,7 @@ export function LoginForm() {
               </div>
             </div>
 
+            {/* زر تسجيل الدخول */}
             <Button
               type="submit"
               disabled={loading}

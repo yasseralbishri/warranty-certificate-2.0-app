@@ -1,6 +1,7 @@
 import React, { memo } from 'react'
 import { FileText } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { WarrantyListContent } from './WarrantyListContent'
 
 interface WarrantyListWrapperProps {
@@ -46,17 +47,53 @@ export const WarrantyListWrapper = memo(function WarrantyListWrapper({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
-        <WarrantyListContent
-          isLoading={isLoading}
-          warranties={warranties}
-          groupedWarranties={groupedWarranties}
-          searchTerm={searchTerm}
-          onPrintCertificate={onPrintCertificate}
-          onEditWarranty={onEditWarranty}
-          onDeleteWarranty={onDeleteWarranty}
-          onClearSearch={onClearSearch}
-          isDeleting={isDeleting}
-        />
+        {isLoading ? (
+          <div className="space-y-6">
+            {/* Loading Skeletons */}
+            {[...Array(3)].map((_, index) => (
+              <div key={index} className="border rounded-xl p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Skeleton className="h-12 w-12 rounded-lg" />
+                    <Skeleton className="h-6 w-48" />
+                  </div>
+                  <Skeleton className="h-6 w-24 rounded-full" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                </div>
+                <div className="flex justify-center gap-3 pt-4">
+                  <Skeleton className="h-12 w-12 rounded-lg" />
+                  <Skeleton className="h-12 w-12 rounded-lg" />
+                  <Skeleton className="h-12 w-12 rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <WarrantyListContent
+            isLoading={isLoading}
+            warranties={warranties}
+            groupedWarranties={groupedWarranties}
+            searchTerm={searchTerm}
+            onPrintCertificate={onPrintCertificate}
+            onEditWarranty={onEditWarranty}
+            onDeleteWarranty={onDeleteWarranty}
+            onClearSearch={onClearSearch}
+            isDeleting={isDeleting}
+          />
+        )}
       </CardContent>
     </Card>
   )

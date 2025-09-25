@@ -3,11 +3,12 @@ import { Save, Loader2, CheckCircle, AlertCircle, User, Calendar, Building2 } fr
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useToast } from '@/components/ui/use-toast'
 import { useCreateWarranty, useProducts } from '@/hooks/useWarranties'
 import { CertificateGenerator } from './CertificateGenerator'
 import { SupabaseSetupAlert } from './SupabaseSetupAlert'
 import { sanitizeInput } from '@/lib/utils'
-import { useAuth } from '@/contexts/AuthContext'
+import { useSecureAuth } from '@/contexts/SecureAuthContext'
 
 export const WarrantyForm = memo(function WarrantyForm() {
   console.log('🔄 [WarrantyForm] بدء تحميل نموذج الضمان...')
@@ -31,7 +32,8 @@ export const WarrantyForm = memo(function WarrantyForm() {
   // All custom hooks must also be at the top
   const { data: products = [], isLoading: productsLoading, error: productsError } = useProducts()
   const createWarrantyMutation = useCreateWarranty()
-  const { user } = useAuth()
+  const { user } = useSecureAuth()
+  const { toast } = useToast()
   
   console.log('📊 [WarrantyForm] حالة البيانات:', {
     products: products,
@@ -39,7 +41,12 @@ export const WarrantyForm = memo(function WarrantyForm() {
     productsLoading: productsLoading,
     productsError: productsError,
     user: user,
-    formData: formData
+    formData: formData,
+    createWarrantyMutation: {
+      isLoading: createWarrantyMutation.isLoading,
+      isError: createWarrantyMutation.isError,
+      error: createWarrantyMutation.error
+    }
   })
 
 
@@ -62,40 +69,76 @@ export const WarrantyForm = memo(function WarrantyForm() {
   }, [])
 
   const handleSaveClick = async () => {
+    console.log('🔄 [WarrantyForm] بدء حفظ النموذج...', formData)
+    
     // Clear previous messages
     setErrorMessage(null)
     setSuccessMessage(null)
     
     // Validation
     if (!formData.customerName.trim()) {
-      setErrorMessage('يرجى إدخال اسم العميل')
+      const errorMsg = 'يرجى إدخال اسم العميل'
+      setErrorMessage(errorMsg)
+      toast({
+        title: "خطأ في التحقق",
+        description: errorMsg,
+        variant: "destructive",
+      })
       return
     }
     
     if (!formData.phoneNumber.trim()) {
-      setErrorMessage('يرجى إدخال رقم الهاتف')
+      const errorMsg = 'يرجى إدخال رقم الهاتف'
+      setErrorMessage(errorMsg)
+      toast({
+        title: "خطأ في التحقق",
+        description: errorMsg,
+        variant: "destructive",
+      })
       return
     }
     
     if (!formData.invoiceNumber.trim()) {
-      setErrorMessage('يرجى إدخال رقم الفاتورة')
+      const errorMsg = 'يرجى إدخال رقم الفاتورة'
+      setErrorMessage(errorMsg)
+      toast({
+        title: "خطأ في التحقق",
+        description: errorMsg,
+        variant: "destructive",
+      })
       return
     }
     
-    if (formData.selectedProducts.length === 0) {
-      setErrorMessage('يرجى اختيار شركة واحدة على الأقل')
-      return
-    }
+    // اختيار الشركة اختياري - لا نحتاج للتحقق من وجود شركات مختارة
     
     try {
-      await createWarrantyMutation.mutateAsync({
+      console.log('🔄 [WarrantyForm] استدعاء createWarrantyMutation...')
+      const result = await createWarrantyMutation.mutateAsync({
         ...formData,
         userId: user?.id
       })
+      console.log('✅ [WarrantyForm] تم حفظ النموذج بنجاح:', result)
       
       setSavedWarrantyData(formData)
-      setSuccessMessage('تم حفظ الضمان بنجاح! يمكنك الآن طباعة الشهادة.')
-      setShowCertificate(true)
+      
+      // رسالة مختلفة حسب وجود شركات مختارة أم لا
+      if (formData.selectedProducts.length > 0) {
+        toast({
+          title: "تم حفظ الضمان بنجاح!",
+          description: "يمكنك الآن طباعة الشهادة.",
+          variant: "success",
+        })
+        setSuccessMessage('تم حفظ الضمان بنجاح! يمكنك الآن طباعة الشهادة.')
+        setShowCertificate(true)
+      } else {
+        toast({
+          title: "تم حفظ بيانات العميل بنجاح!",
+          description: "لم يتم اختيار أي شركة",
+          variant: "success",
+        })
+        setSuccessMessage('تم حفظ بيانات العميل بنجاح! (لم يتم اختيار أي شركة)')
+        // لا نعرض الشهادة إذا لم يتم اختيار شركات
+      }
       
       // Reset form
       setFormData({
@@ -108,12 +151,18 @@ export const WarrantyForm = memo(function WarrantyForm() {
       })
       
     } catch (error: any) {
-      console.error('Error creating warranty:', error)
-      setErrorMessage(`خطأ في حفظ الضمان: ${error.message || 'يرجى التحقق من اتصال قاعدة البيانات'}`)
+      console.error('💥 [WarrantyForm] خطأ في حفظ النموذج:', error)
+      const errorMsg = `خطأ في حفظ الضمان: ${error.message || 'يرجى التحقق من اتصال قاعدة البيانات'}`
+      setErrorMessage(errorMsg)
+      toast({
+        title: "خطأ في الحفظ",
+        description: errorMsg,
+        variant: "destructive",
+      })
     }
   }
 
-
+  // Conditional rendering - moved to the end to avoid hooks order issues
   if (showCertificate && savedWarrantyData) {
     return (
       <CertificateGenerator
@@ -228,8 +277,12 @@ export const WarrantyForm = memo(function WarrantyForm() {
                 <div className="p-2 bg-purple-100 rounded-lg animate-pulse-slow">
                   <Building2 className="h-5 w-5 text-purple-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-800">الشركات المشمولة</h3>
+                <h3 className="text-xl font-bold text-gray-800">الشركات المشمولة (اختياري)</h3>
               </div>
+              
+              <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                💡 يمكنك اختيار الشركات التي تريد تضمينها في الضمان، أو تركها فارغة إذا لم تكن بحاجة لضمانات محددة
+              </p>
               
               {productsLoading ? (
                 <div className="flex items-center justify-center py-12 bg-gray-50 rounded-lg">

@@ -2,6 +2,7 @@ import { Component, ErrorInfo, ReactNode } from 'react'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { logError } from '@/lib/logger'
 
 interface Props {
   children: ReactNode
@@ -34,8 +35,8 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error details to console for debugging
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    // Log error details using our logger
+    logError('ErrorBoundary caught an error:', error, errorInfo)
     
     this.setState({
       error,
@@ -45,7 +46,7 @@ class ErrorBoundary extends Component<Props, State> {
     // Log to external service in production
     if (process.env.NODE_ENV === 'production') {
       // Here you would typically send the error to a logging service
-      console.error('Production error:', {
+      logError('Production error:', {
         message: error.message,
         stack: error.stack,
         componentStack: errorInfo.componentStack

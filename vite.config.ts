@@ -35,6 +35,9 @@ export default defineConfig({
             if (id.includes('lucide') || id.includes('radix')) {
               return 'ui-vendor'
             }
+            if (id.includes('@tanstack')) {
+              return 'query-vendor'
+            }
             return 'vendor'
           }
         },
@@ -43,7 +46,7 @@ export default defineConfig({
         entryFileNames: 'assets/[name]-[hash].js',
       }
     },
-    target: 'es2015',
+    target: 'es2020',
     minify: 'terser',
     sourcemap: false,
     assetsDir: 'assets',
@@ -53,6 +56,13 @@ export default defineConfig({
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true
+    },
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn']
+      }
     }
   },
   server: {

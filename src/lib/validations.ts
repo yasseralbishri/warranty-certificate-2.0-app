@@ -9,7 +9,7 @@ export const warrantyFormSchema = z.object({
     .min(7, 'يجب أن يكون رقم الهاتف 7 أرقام على الأقل')
     .regex(phoneRegex, 'يرجى إدخال رقم هاتف صحيح'),
   invoiceNumber: z.string().min(1, 'رقم الفاتورة مطلوب'),
-  selectedProducts: z.array(z.string()).min(1, 'يرجى اختيار شركة واحدة على الأقل'),
+  selectedProducts: z.array(z.string()), // اختياري - لا نحتاج للتحقق من وجود شركات
   warrantyDuration: z.enum(['per_product', 'per_invoice']),
   warrantyPeriod: z.number().min(1, 'يجب أن تكون مدة الضمان شهر واحد على الأقل').max(60, 'لا يمكن أن تتجاوز مدة الضمان 60 شهراً')
 })

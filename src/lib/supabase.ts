@@ -1,14 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
+import { logSupabase, logError, logDebug } from './logger'
+import { SAMPLE_PRODUCTS } from './constants'
 
 // Get environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Debug logs for development
-if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-  console.log('🔧 [Supabase] Initializing Supabase client...')
-  console.log('🔧 [Supabase] URL:', supabaseUrl ? '✅ Set' : '❌ Missing')
-  console.log('🔧 [Supabase] Key:', supabaseAnonKey ? '✅ Set' : '❌ Missing')
+// Debug logs for development only
+if (typeof window !== 'undefined' && window.location.hostname === 'localhost' && import.meta.env.DEV) {
+  logSupabase('Initializing Supabase client...')
+  logSupabase('URL:', supabaseUrl ? '✅ Set' : '❌ Missing')
+  logSupabase('Key:', supabaseAnonKey ? '✅ Set' : '❌ Missing')
 }
 
 // Validate environment variables
@@ -18,21 +20,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
   if (!supabaseAnonKey) missingVars.push('VITE_SUPABASE_ANON_KEY')
   
   const errorMessage = `Missing required environment variables: ${missingVars.join(', ')}. Please check your .env file or Vercel settings.`
-  console.error('❌ [Supabase]', errorMessage)
+  logError('❌ [Supabase]', errorMessage)
   throw new Error(errorMessage)
 }
 
 // Validate URL format
 if (!supabaseUrl.startsWith('https://') || !supabaseUrl.includes('.supabase.co')) {
   const errorMessage = 'Invalid Supabase URL format. Must start with https:// and end with .supabase.co'
-  console.error('❌ [Supabase]', errorMessage)
+  logError('❌ [Supabase]', errorMessage)
   throw new Error(errorMessage)
 }
 
 // Validate key format
 if (!supabaseAnonKey.startsWith('eyJ') && !supabaseAnonKey.startsWith('sb_')) {
   const errorMessage = 'Invalid Supabase key format. Must start with eyJ or sb_'
-  console.error('❌ [Supabase]', errorMessage)
+  logError('❌ [Supabase]', errorMessage)
   throw new Error(errorMessage)
 }
 
@@ -50,12 +52,22 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     // Storage implementation
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     // Flow type for authentication
-    flowType: 'pkce'
+    flowType: 'pkce',
+    // Session refresh settings
+    refreshTokenRotationEnabled: true,
+    // Debug mode for development
+    debug: import.meta.env.DEV
   },
   // Global configuration
   global: {
     headers: {
       'X-Client-Info': 'warranty-app'
+    }
+  },
+  // Realtime settings
+  realtime: {
+    params: {
+      eventsPerSecond: 10
     }
   }
 })
@@ -65,7 +77,7 @@ export const warrantyService = {
 
   // Get all products
   async getProducts() {
-    console.log('🔄 [getProducts] Fetching products from Supabase...')
+    logSupabase('Fetching products from Supabase...')
     
     const { data, error } = await supabase
       .from('products')
@@ -73,35 +85,33 @@ export const warrantyService = {
       .order('name')
     
     if (error) {
-      console.error('💥 [getProducts] Error fetching products:', error)
+      logError('Error fetching products:', error)
       throw error
     }
     
-    console.log('✅ [getProducts] Products fetched successfully, count:', data?.length || 0)
+    logSupabase('Products fetched successfully, count:', data?.length || 0)
     return data
   },
 
   // Get all warranties with related data
   async getWarranties() {
-    console.log('🔄 [getWarranties] Fetching warranties from Supabase...')
+    logSupabase('Fetching warranties from Supabase...')
     
     const { data, error } = await supabase
       .from('warranties')
       .select(`
         *,
         customer:customers(*),
-        product:products(*),
-        created_by_user:user_profiles!created_by(*),
-        updated_by_user:user_profiles!updated_by(*)
+        product:products(*)
       `)
       .order('created_at', { ascending: false })
     
     if (error) {
-      console.error('💥 [getWarranties] Error fetching warranties:', error)
+      logError('Error fetching warranties:', error)
       throw error
     }
     
-    console.log('✅ [getWarranties] Warranties fetched successfully, count:', data?.length || 0)
+    logSupabase('Warranties fetched successfully, count:', data?.length || 0)
     return data
   },
 
@@ -157,9 +167,7 @@ export const warrantyService = {
       .select(`
         *,
         customer:customers(*),
-        product:products(*),
-        created_by_user:user_profiles!created_by(*),
-        updated_by_user:user_profiles!updated_by(*)
+        product:products(*)
       `)
 
     if (params.invoiceNumber) {
@@ -439,14 +447,6 @@ export const userService = {
   }
 }
 
-// Sample products data
-const SAMPLE_PRODUCTS = [
-  { name: 'مكيف هواء', description: 'مكيف هواء منزلي', warranty_period_months: 24 },
-  { name: 'غسالة', description: 'غسالة ملابس', warranty_period_months: 36 },
-  { name: 'ثلاجة', description: 'ثلاجة منزلية', warranty_period_months: 24 },
-  { name: 'فرن', description: 'فرن كهربائي', warranty_period_months: 12 },
-  { name: 'ميكروويف', description: 'فرن ميكروويف', warranty_period_months: 12 }
-]
 
 // Database types (you may need to generate these from your Supabase schema)
 export type Database = {
@@ -578,4 +578,80 @@ export type Database = {
   }
 }
 
-console.log('✅ [Supabase] Client initialized successfully')
+// Connection monitoring functions
+export const checkSupabaseConnection = async () => {
+  try {
+    logSupabase('🔍 [checkSupabaseConnection] Testing database connection...')
+    
+    // Test connection by fetching a simple query
+    const { data, error } = await supabase
+      .from('products')
+      .select('id')
+      .limit(1)
+    
+    if (error) {
+      logError('❌ [checkSupabaseConnection] Database connection failed:', error)
+      return {
+        isConnected: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      }
+    }
+    
+    logSupabase('✅ [checkSupabaseConnection] Database connection successful')
+    return {
+      isConnected: true,
+      error: null,
+      timestamp: new Date().toISOString()
+    }
+  } catch (error: any) {
+    logError('❌ [checkSupabaseConnection] Connection test failed:', error)
+    return {
+      isConnected: false,
+      error: error.message || 'Connection test failed',
+      timestamp: new Date().toISOString()
+    }
+  }
+}
+
+// Realtime connection manager
+export const realtimeManager = {
+  subscriptions: new Map<string, any>(),
+  
+  getConnectionStatus() {
+    return {
+      isConnected: supabase.realtime.getChannels().length > 0,
+      activeSubscriptions: Array.from(this.subscriptions.keys())
+    }
+  },
+  
+  subscribe(table: string, callback: (payload: any) => void) {
+    const channel = supabase
+      .channel(`${table}_changes`)
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table }, 
+        callback
+      )
+      .subscribe()
+    
+    this.subscriptions.set(table, channel)
+    return channel
+  },
+  
+  unsubscribe(table: string) {
+    const channel = this.subscriptions.get(table)
+    if (channel) {
+      supabase.removeChannel(channel)
+      this.subscriptions.delete(table)
+    }
+  },
+  
+  unsubscribeAll() {
+    this.subscriptions.forEach((channel) => {
+      supabase.removeChannel(channel)
+    })
+    this.subscriptions.clear()
+  }
+}
+
+logSupabase('Client initialized successfully')
