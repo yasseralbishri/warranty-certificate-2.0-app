@@ -5,8 +5,8 @@ import path from 'path'
 export default defineConfig({
   plugins: [
     react({
-      // إصلاح مشكلة useLayoutEffect
-      jsxRuntime: 'automatic'
+      jsxRuntime: 'automatic',
+      include: ['**/*.tsx', '**/*.ts', '**/*.jsx', '**/*.js']
     })
   ],
   resolve: {
@@ -20,7 +20,14 @@ export default defineConfig({
       'react-dom',
       'react-router-dom',
       '@tanstack/react-query',
-      '@supabase/supabase-js'
+      '@supabase/supabase-js',
+      'lucide-react',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-toast',
+      '@radix-ui/react-select',
+      '@radix-ui/react-checkbox',
+      '@radix-ui/react-label',
+      '@radix-ui/react-slot'
     ],
     esbuildOptions: {
       target: 'es2020'
@@ -76,8 +83,11 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
   },
   esbuild: {
-    target: 'es2020'
+    target: 'es2020',
+    jsx: 'automatic',
+    jsxImportSource: 'react'
   },
 })
