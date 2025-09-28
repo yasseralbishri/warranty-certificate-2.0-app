@@ -13,11 +13,13 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ['react', 'react-dom'],
   },
   optimizeDeps: {
     include: [
       'react',
       'react-dom',
+      'react-dom/client',
       'react-router-dom',
       '@tanstack/react-query',
       '@supabase/supabase-js',
@@ -38,7 +40,12 @@ export default defineConfig({
       output: {
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
+            // Keep React core together to prevent hook timing issues
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-dom/client')) {
+              return 'react-vendor'
+            }
+            // Group React ecosystem together with React
+            if (id.includes('react-router') || id.includes('react-query') || id.includes('@tanstack')) {
               return 'react-vendor'
             }
             if (id.includes('supabase')) {
@@ -46,9 +53,6 @@ export default defineConfig({
             }
             if (id.includes('lucide') || id.includes('radix')) {
               return 'ui-vendor'
-            }
-            if (id.includes('@tanstack')) {
-              return 'query-vendor'
             }
             return 'vendor'
           }
@@ -84,6 +88,9 @@ export default defineConfig({
   define: {
     global: 'globalThis',
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+  },
+  ssr: {
+    noExternal: ['@radix-ui/*', 'lucide-react']
   },
   esbuild: {
     target: 'es2020',
