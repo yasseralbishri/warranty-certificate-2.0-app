@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect } from 'react'
 
-// Hook آمن للاستخدام في بيئات مختلفة
-export const useIsomorphicLayoutEffect = 
-  typeof window !== 'undefined' ? useLayoutEffect : useEffect
+// Use layout effect when DOM is available (prevents SSR warnings)
+const canUseDOM = typeof globalThis !== 'undefined' && Boolean(globalThis?.document)
+
+export const useIsomorphicLayoutEffect = canUseDOM ? useLayoutEffect : useEffect
